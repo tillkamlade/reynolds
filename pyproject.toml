@@ -8,4 +8,12 @@ requires = ["scikit-build-core >= 0.11.6",
 build-backend = "scikit_build_core.build"
 
 [project.optional-dependencies]
-test = ["pytest >= 9.0.2"]
+test = ["ruff >= 0.0.47",
+        "mypy >= 1.19.1",
+        "pytest >= 9.0.2"]
+
+[tool.ruff]
+src = ["src"]
+
+[tool.mypy]
+files = ["src"]
