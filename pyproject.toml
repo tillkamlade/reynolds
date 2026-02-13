@@ -1,0 +1,8 @@
+[project]
+name = "reynolds"
+version = "0.0.1"
+
+[build-system]
+requires = ["scikit-build-core >= 0.11.6",
+            "pybind11 >= 3.0.1"]
+build-backend = "scikit_build_core.build"
