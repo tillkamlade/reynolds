@@ -1,0 +1,3 @@
+class Reynolds:
+    def __init__(self, name: str) -> None: ...
+    name: str
