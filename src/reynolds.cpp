@@ -80,17 +80,17 @@ extern "C" {
     };
 
     static PyMemberDef Reynolds_members[] = {
-        {"D", T_DOUBLE, offsetof(ReynoldsObject, r.D), 0, "diameter"},
-        {"B", T_DOUBLE, offsetof(ReynoldsObject, r.B), 0, "width"},
-        {"s", T_DOUBLE, offsetof(ReynoldsObject, r.s), 0, "s"},
-        {"F", T_DOUBLE, offsetof(ReynoldsObject, r.F), 0, "F"},
-        {"f", T_DOUBLE, offsetof(ReynoldsObject, r.f), 0, "f"},
-        {"eta", T_DOUBLE, offsetof(ReynoldsObject, r.eta), 0, "viscosity"},
-        {"p_amb", T_DOUBLE, offsetof(ReynoldsObject, r.p_amb), 0, "ambient pressure"},
-        {"n_theta", T_INT, offsetof(ReynoldsObject, r.n_theta), 0, "theta samples"},
-        {"n_z", T_INT, offsetof(ReynoldsObject, r.n_z), 0, "z samples"},
-        {"theta_min", T_DOUBLE, offsetof(ReynoldsObject, r.theta_min), 0, "theta min"},
-        {"theta_max", T_DOUBLE, offsetof(ReynoldsObject, r.theta_max), 0, "theta max"},
+        {"D", T_DOUBLE, offsetof(ReynoldsObject, r.D), Py_READONLY, "diameter"},
+        {"B", T_DOUBLE, offsetof(ReynoldsObject, r.B), Py_READONLY, "width"},
+        {"s", T_DOUBLE, offsetof(ReynoldsObject, r.s), Py_READONLY, "s"},
+        {"F", T_DOUBLE, offsetof(ReynoldsObject, r.F), Py_READONLY, "F"},
+        {"f", T_DOUBLE, offsetof(ReynoldsObject, r.f), Py_READONLY, "f"},
+        {"eta", T_DOUBLE, offsetof(ReynoldsObject, r.eta), Py_READONLY, "viscosity"},
+        {"p_amb", T_DOUBLE, offsetof(ReynoldsObject, r.p_amb), Py_READONLY, "ambient pressure"},
+        {"n_theta", T_INT, offsetof(ReynoldsObject, r.n_theta), Py_READONLY, "theta samples"},
+        {"n_z", T_INT, offsetof(ReynoldsObject, r.n_z), Py_READONLY, "z samples"},
+        {"theta_min", T_DOUBLE, offsetof(ReynoldsObject, r.theta_min), Py_READONLY, "theta min"},
+        {"theta_max", T_DOUBLE, offsetof(ReynoldsObject, r.theta_max), Py_READONLY, "theta max"},
         {NULL}  /* Sentinel */
     };
 

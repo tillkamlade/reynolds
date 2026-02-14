@@ -44,3 +44,27 @@ def test_Reynolds(rey):
 
     assert rey.theta_min == pytest.approx(0)
     assert rey.theta_max == pytest.approx(2 * pi)
+
+def test_Reynolds_READONLY(rey):
+    with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
+        rey.D = 0
+    with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
+        rey.B = 0
+    with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
+        rey.s = 0
+    with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
+        rey.F = 0
+    with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
+        rey.f = 0
+    with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
+        rey.eta = 0
+    with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
+        rey.p_amb = 0
+    with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
+        rey.n_theta = 10
+    with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
+        rey.n_z = 10
+    with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
+        rey.theta_min = 1
+    with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
+        rey.theta_max = 1
