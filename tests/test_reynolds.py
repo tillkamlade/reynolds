@@ -5,18 +5,22 @@ from math import pi
 from reynolds import Reynolds
 
 @pytest.fixture
-def rey() -> Reynolds:
-    return Reynolds(D = 0.5,
-                    B = 0.25,
-                    s = 0.1e-3,
-                    F = 20000,
-                    f = 5,
-                    eta = 100,
-                    p_amb = 0,
-                    n_theta = 100,
-                    n_z = 100)
+def reynolds_kwargs() -> dict[str, float | int]:
+    return {
+        'D': 0.5,
+        'B': 0.25,
+        's': 0.1e-3,
+        'F': 20000,
+        'f': 5,
+        'eta': 100,
+        'p_amb': 0,
+        'n_theta': 100,
+        'n_z': 100
+    }
 
-def test_Reynolds(rey):
+def test_Reynolds(reynolds_kwargs):
+    rey = Reynolds(**reynolds_kwargs)
+
     assert hasattr(rey, "D")
     assert hasattr(rey, "B")
     assert hasattr(rey, "s")
@@ -45,7 +49,9 @@ def test_Reynolds(rey):
     assert rey.theta_min == pytest.approx(0)
     assert rey.theta_max == pytest.approx(2 * pi)
 
-def test_Reynolds_READONLY(rey):
+def test_Reynolds_READONLY(reynolds_kwargs):
+    rey = Reynolds(**reynolds_kwargs)
+
     with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
         rey.D = 0
     with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
@@ -68,3 +74,8 @@ def test_Reynolds_READONLY(rey):
         rey.theta_min = 1
     with pytest.raises(expected_exception = AttributeError, match = 'readonly attribute'):
         rey.theta_max = 1
+
+def test_Reynolds_negative_values(reynolds_kwargs):
+    reynolds_kwargs['D'] = -reynolds_kwargs['D']
+    with pytest.raises(expected_exception = AttributeError, match = 'D must be positive'):
+        Reynolds(**reynolds_kwargs)
