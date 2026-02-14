@@ -10,6 +10,10 @@ class Reynolds:
     p_amb: Final[float]
     n_theta: Final[int]
     n_z: Final[int]
+    n: Final[int]
+    dtheta: Final[int]
+    dz: Final[int]
+    
     def __init__(self,
                  D: float,
                  B: float,
@@ -24,3 +28,6 @@ class Reynolds:
                  theta_max: float = 2 * np.pi) -> None: ...
 
     def A(self, epsilon: float, beta: float) -> np.ndarray[tuple[int, int], np.dtype[np.float64]]: ...
+
+    @property
+    def theta(self) -> np.ndarray[tuple[int], np.dtype[np.float64]]: ...

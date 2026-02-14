@@ -6,6 +6,8 @@
 
 class Reynolds {
     public:
+        Reynolds();
+        
         Reynolds(
             const double D,
             const double B,

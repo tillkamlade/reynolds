@@ -1,5 +1,20 @@
 #include "reynolds.hpp"
 
+Reynolds::Reynolds() :
+            R(0),
+            s(0),
+            F(0),
+            omega(0),
+            eta(0),
+            p_amb(0),
+            n_theta(0),
+            n_z(0),
+            n(0),
+            dtheta(0),
+            dz(0),
+            theta(Eigen::ArrayXd::Zero()),
+            z(Eigen::ArrayXd::Zero()) {}
+
 Reynolds::Reynolds(
             const double D,
             const double B,
@@ -11,10 +26,10 @@ Reynolds::Reynolds(
             const unsigned int n_theta,
             const unsigned int n_z,
             const double theta_min,
-            const double theta_max)
-            :
+            const double theta_max) :
             R(D / 2),
-            s(s), F(F),
+            s(s),
+            F(F),
             omega(2 * M_PI * f),
             eta(eta),
             p_amb(p_amb),
@@ -25,6 +40,22 @@ Reynolds::Reynolds(
             dz(B / (n_z - 1)),
             theta(Eigen::ArrayXd::LinSpaced(n_theta, theta_min, theta_max - dtheta)),
             z(Eigen::ArrayXd::LinSpaced(n_z, -B/2, B/2)) {}
+
+std::vector<double> Reynolds::h(const double &epsilon, const double &beta) {
+    std::vector<double> h;
+    h.reserve(this->n_theta);
+    const double &s = this->s;
+
+    for (const double &theta : this->theta) {
+        h.push_back(s * (1 - epsilon * cos(theta - beta)));
+    }
+
+    return h;
+}
+
+unsigned int Reynolds::idx(const unsigned int &i, const unsigned int &j) {
+    return i * this->n_z + j;
+}
 
 Eigen::SparseMatrix<double> Reynolds::A(const double &epsilon, const double &beta) {
     Eigen::SparseMatrix<double> A(this->n, this->n);
@@ -53,6 +84,24 @@ Eigen::SparseMatrix<double> Reynolds::A(const double &epsilon, const double &bet
     return A;
 }
 
+Eigen::VectorXd Reynolds::b(const double &epsilon, const double &beta) {
+    Eigen::VectorXd b = Eigen::VectorXd::Zero(this->n);
+    std::vector<double> h = this->h(epsilon, beta);
+
+    for (unsigned int i = 0; i < this->n_theta; i++) {
+        for (unsigned int j = 0; j < this->n_z; j++) {
+            if ((j == 0) || (j == this->n_z - 1)) {
+                b(this->idx(i,j)) = this->p_amb;
+                continue;
+            } else {
+                b(this->idx(i,j)) = 3*this->eta*this->omega*(h[(i+1)%this->n_theta] - h[(i-1)%this->n_theta])/this->dtheta;
+            }
+        }
+    }
+
+    return b;
+}
+
 Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Reynolds::p(const double &epsilon, const double &beta) {
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> p(this->n_theta, this->n_z);
@@ -72,55 +121,6 @@ Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Reynolds:
     }
 
     return p;
-}
-
-double Reynolds::P_f(const double &epsilon, double const &beta) {
-    double P_f = 0;
-    const double dA = this->R * this->dtheta * this->dz;
-
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> tau = this->tau(epsilon, beta);
-    
-    for (unsigned int i = 0; i < this->n_theta; i++) {
-        for (unsigned int j = 0; j < this->n_z; j++) {
-            P_f += this->omega * this->R * tau(i,j) * dA;
-        }
-    }
-
-    return P_f;
-}
-
-unsigned int Reynolds::idx(const unsigned int &i, const unsigned int &j) {
-    return i * this->n_z + j;
-}
-
-std::vector<double> Reynolds::h(const double &epsilon, const double &beta) {
-    std::vector<double> h;
-    h.reserve(this->n_theta);
-    const double &s = this->s;
-
-    for (const double &theta : this->theta) {
-        h.push_back(s * (1 - epsilon * cos(theta - beta)));
-    }
-
-    return h;
-}
-
-Eigen::VectorXd Reynolds::b(const double &epsilon, const double &beta) {
-    Eigen::VectorXd b = Eigen::VectorXd::Zero(this->n);
-    std::vector<double> h = this->h(epsilon, beta);
-
-    for (unsigned int i = 0; i < this->n_theta; i++) {
-        for (unsigned int j = 0; j < this->n_z; j++) {
-            if ((j == 0) || (j == this->n_z - 1)) {
-                b(this->idx(i,j)) = this->p_amb;
-                continue;
-            } else {
-                b(this->idx(i,j)) = 3*this->eta*this->omega*(h[(i+1)%this->n_theta] - h[(i-1)%this->n_theta])/this->dtheta;
-            }
-        }
-    }
-
-    return b;
 }
 
 Eigen::Vector<double, 2> Reynolds::L(const double &epsilon, const double &beta) {
@@ -159,4 +159,19 @@ Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Reynolds:
     }
 
     return tau;
+}
+
+double Reynolds::P_f(const double &epsilon, double const &beta) {
+    double P_f = 0;
+    const double dA = this->R * this->dtheta * this->dz;
+
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> tau = this->tau(epsilon, beta);
+    
+    for (unsigned int i = 0; i < this->n_theta; i++) {
+        for (unsigned int j = 0; j < this->n_z; j++) {
+            P_f += this->omega * this->R * tau(i,j) * dA;
+        }
+    }
+
+    return P_f;
 }
