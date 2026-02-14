@@ -36,7 +36,7 @@ extern "C" {
         double D=0, B=0, s=0, F=0, f=0, eta=0, p_amb=0, theta_min=0, theta_max=2*M_PI;
         int n_z=0, n_theta=0;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kwds, "dddddddii|dd", (char **)kwlist,
+        if (!PyArg_ParseTupleAndKeywords(args, kwds, "dddddddii|dd", kwlist,
                                          &D,&B,&s,&F,&f,&eta,&p_amb,&n_theta,&n_z,&theta_min,&theta_max)) {
             /* For now do not raise a custom error; propagate parse failure */
             return -1;
