@@ -13,7 +13,7 @@ class Reynolds:
     n: Final[int]
     dtheta: Final[int]
     dz: Final[int]
-    
+
     def __init__(self,
                  D: float,
                  B: float,
@@ -31,3 +31,6 @@ class Reynolds:
 
     @property
     def theta(self) -> np.ndarray[tuple[int], np.dtype[np.float64]]: ...
+
+    @property
+    def z(self) -> np.ndarray[tuple[int], np.dtype[np.float64]]: ...

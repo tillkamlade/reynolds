@@ -60,8 +60,6 @@ extern "C" {
     }
 
     static PyObject *Reynolds_theta(ReynoldsObject *self, void *closure) {
-        // PyErr_SetString(PyExc_NotImplementedError, "Reynolds.theta is not implemented yet");
-        // return NULL;
         npy_intp dims[1] = {self->r.n_theta};
 
         PyObject *theta = PyArray_SimpleNew(1, dims, NPY_DOUBLE);
@@ -74,6 +72,21 @@ extern "C" {
         }
 
         return theta;
+    }
+
+    static PyObject *Reynolds_z(ReynoldsObject *self, void *closure) {
+        npy_intp dims[1] = {self->r.n_z};
+
+        PyObject *z = PyArray_SimpleNew(1, dims, NPY_DOUBLE);
+        if (!z) return NULL;
+
+        double *data = (double *) PyArray_DATA((PyArrayObject *) z);
+
+        for (int i = 0; i < dims[0]; i++) {
+            data[i] = self->r.z[i];
+        }
+
+        return z;
     }
 
     static PyObject *Reynolds_A(ReynoldsObject *self, PyObject *args, PyObject *kwargs)
@@ -108,6 +121,7 @@ extern "C" {
 
     static PyGetSetDef Reynolds_getset[] = {
         {"theta", reinterpret_cast<getter>(Reynolds_theta), NULL, "", NULL},
+        {"z", reinterpret_cast<getter>(Reynolds_z), NULL, "", NULL},
         {NULL}
     };
 

@@ -85,3 +85,9 @@ def test_Reynolds_theta(reynolds_kwargs):
     theta = rey.theta
     assert theta.shape[0] == rey.n_theta
     assert np.allclose(theta, np.linspace(0, 2 * np.pi, 100, endpoint = False))
+
+def test_Reynolds_z(reynolds_kwargs):
+    rey = Reynolds(**reynolds_kwargs)
+    z = rey.z
+    assert z.shape[0] == rey.n_z
+    assert np.allclose(z, np.linspace(-0.125, 0.125, 100, endpoint = True))
