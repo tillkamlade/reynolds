@@ -1,15 +1,6 @@
-#define PY_SSIZE_T_CLEAN
-#define _USE_MATH_DEFINES
-#include <math.h>
-#include <Python.h>
-#include <structmember.h>
-#include <numpy/arrayobject.h>
-#include <new>
+#include "reynolds.hpp"
 
-class Reynolds {
-    public:
-        Reynolds() : D(0), B(0), s(0), F(0), f(0), eta(0), p_amb(0), n_theta(0), n_z(0), theta_min(0), theta_max(2 * M_PI) {}
-        Reynolds(
+Reynolds::Reynolds(
             const double D,
             const double B,
             const double s,
@@ -20,143 +11,152 @@ class Reynolds {
             const unsigned int n_theta,
             const unsigned int n_z,
             const double theta_min,
-            const double theta_max
-        ) : D(D), B(B), s(s), F(F), f(f), eta(eta), p_amb(p_amb), n_theta(n_theta), n_z(n_z), theta_min(theta_min), theta_max(theta_max) {}
+            const double theta_max)
+            :
+            R(D / 2),
+            s(s), F(F),
+            omega(2 * M_PI * f),
+            eta(eta),
+            p_amb(p_amb),
+            n_theta(n_theta),
+            n_z(n_z),
+            n(n_theta * n_z),
+            dtheta(2 * M_PI / n_theta),
+            dz(B / (n_z - 1)),
+            theta(Eigen::ArrayXd::LinSpaced(n_theta, theta_min, theta_max - dtheta)),
+            z(Eigen::ArrayXd::LinSpaced(n_z, -B/2, B/2)) {}
 
-        const double D, B, s, F, f, eta, p_amb, theta_min, theta_max;
-        const unsigned int n_theta, n_z;
-};
+Eigen::SparseMatrix<double> Reynolds::A(const double &epsilon, const double &beta) {
+    Eigen::SparseMatrix<double> A(this->n, this->n);
+    std::vector<double> h = this->h(epsilon, beta);
+    
+    std::vector<Eigen::Triplet<double>> triplets;
+    triplets.reserve(5 * this->n);
 
-extern "C" {
-    typedef struct {
-        PyObject_HEAD
-        Reynolds r;
-    } ReynoldsObject;
-
-    /* Prototype / stub: __new__ allocates and zero-inits fields */
-    static PyObject *Reynolds_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
-    {
-        PyObject *self = type->tp_alloc(type, 0);
-        if (!self) return NULL;
-        return self;
-    }
-
-    /* Prototype / stub: __init__ (parsing/initialization to be implemented later) */
-    static int Reynolds_init(ReynoldsObject *self, PyObject *args, PyObject *kwargs)
-    {
-        static const char *kwlist[] = {"D","B","s","F","f","eta","p_amb","n_theta","n_z","theta_min","theta_max", NULL};
-        double D=0, B=0, s=0, F=0, f=0, eta=0, p_amb=0, theta_min=0, theta_max=2*M_PI;
-        int n_theta=0, n_z=0;
-
-        if (!PyArg_ParseTupleAndKeywords(args, kwargs, "dddddddii|dd", kwlist, &D,&B,&s,&F,&f,&eta,&p_amb,&n_theta,&n_z,&theta_min,&theta_max)) return -1;
-
-        if (D < 0) {PyErr_SetString(PyExc_AttributeError, "D must be positive"); return -1;}
-        if (B < 0) {PyErr_SetString(PyExc_AttributeError, "B must be positive"); return -1;}
-        if (s < 0) {PyErr_SetString(PyExc_AttributeError, "s must be positive"); return -1;}
-        if (F < 0) {PyErr_SetString(PyExc_AttributeError, "F must be positive"); return -1;}
-        if (f < 0) {PyErr_SetString(PyExc_AttributeError, "f must be positive"); return -1;}
-        if (eta < 0) {PyErr_SetString(PyExc_AttributeError, "eta must be positive"); return -1;}
-        if (p_amb < 0) {PyErr_SetString(PyExc_AttributeError, "p_amb must be positive"); return -1;}
-        if (n_theta < 0) {PyErr_SetString(PyExc_AttributeError, "n_theta must be positive"); return -1;}
-        if (n_z < 0) {PyErr_SetString(PyExc_AttributeError, "n_z must be positive"); return -1;}
-        if (theta_min < 0) {PyErr_SetString(PyExc_AttributeError, "theta_min must be positive"); return -1;}
-        if (theta_max < 0) {PyErr_SetString(PyExc_AttributeError, "theta_max must be positive"); return -1;}
-
-        new (&(self->r)) Reynolds(D, B, s, F, f, eta, p_amb, static_cast<unsigned int>(n_theta), static_cast<unsigned int>(n_z), theta_min, theta_max);
-
-        return 0;
-    }
-
-    static PyObject *Reynolds_A(ReynoldsObject *self, PyObject *args)
-    {
-        double epsilon=0.0, beta=0.0;
-        if (!PyArg_ParseTuple(args, "dd", &epsilon, &beta)) return NULL;
-
-        PyErr_SetString(PyExc_NotImplementedError, "Reynolds.A is not implemented yet");
-        return NULL;
-    }
-
-    static PyMethodDef Reynolds_methods[] = {
-        {"A", (PyCFunction)Reynolds_A, METH_VARARGS, "A(epsilon, beta) -> ndarray (prototype)"},
-        {NULL, NULL, 0, NULL}
-    };
-
-    static PyMemberDef Reynolds_members[] = {
-        {"D", T_DOUBLE, offsetof(ReynoldsObject, r.D), Py_READONLY, "diameter"},
-        {"B", T_DOUBLE, offsetof(ReynoldsObject, r.B), Py_READONLY, "width"},
-        {"s", T_DOUBLE, offsetof(ReynoldsObject, r.s), Py_READONLY, "s"},
-        {"F", T_DOUBLE, offsetof(ReynoldsObject, r.F), Py_READONLY, "F"},
-        {"f", T_DOUBLE, offsetof(ReynoldsObject, r.f), Py_READONLY, "f"},
-        {"eta", T_DOUBLE, offsetof(ReynoldsObject, r.eta), Py_READONLY, "viscosity"},
-        {"p_amb", T_DOUBLE, offsetof(ReynoldsObject, r.p_amb), Py_READONLY, "ambient pressure"},
-        {"n_theta", T_UINT, offsetof(ReynoldsObject, r.n_theta), Py_READONLY, "theta samples"},
-        {"n_z", T_UINT, offsetof(ReynoldsObject, r.n_z), Py_READONLY, "z samples"},
-        {"theta_min", T_DOUBLE, offsetof(ReynoldsObject, r.theta_min), Py_READONLY, "theta min"},
-        {"theta_max", T_DOUBLE, offsetof(ReynoldsObject, r.theta_max), Py_READONLY, "theta max"},
-        {NULL}  /* Sentinel */
-    };
-
-    static PyTypeObject ReynoldsType = {
-        PyVarObject_HEAD_INIT(NULL, 0)
-        "reynolds.Reynolds",             /* tp_name */
-        sizeof(ReynoldsObject),          /* tp_basicsize */
-        0,                               /* tp_itemsize */
-        0,                               /* tp_dealloc */
-        0,                               /* tp_vectorcall_offset / tp_print */
-        0,                               /* tp_getattr */
-        0,                               /* tp_setattr */
-        0,                               /* tp_as_async */
-        0,                               /* tp_repr */
-        0,                               /* tp_as_number */
-        0,                               /* tp_as_sequence */
-        0,                               /* tp_as_mapping */
-        0,                               /* tp_hash */
-        0,                               /* tp_call */
-        0,                               /* tp_str */
-        0,                               /* tp_getattro */
-        0,                               /* tp_setattro */
-        0,                               /* tp_as_buffer */
-        Py_TPFLAGS_DEFAULT,              /* tp_flags */
-        "Reynolds objects",              /* tp_doc */
-        0,                               /* tp_traverse */
-        0,                               /* tp_clear */
-        0,                               /* tp_richcompare */
-        0,                               /* tp_weaklistoffset */
-        0,                               /* tp_iter */
-        0,                               /* tp_iternext */
-        Reynolds_methods,                /* tp_methods */
-        Reynolds_members,                /* tp_members */
-        0,                               /* tp_getset */
-        0,                               /* tp_base */
-        0,                               /* tp_dict */
-        0,                               /* tp_descr_get */
-        0,                               /* tp_descr_set */
-        0,                               /* tp_dictoffset */
-        reinterpret_cast<initproc>(Reynolds_init),         /* tp_init */
-        0,                               /* tp_alloc */
-        Reynolds_new,                    /* tp_new */
-    };
-
-    static struct PyModuleDef reynoldsmodule = {
-        PyModuleDef_HEAD_INIT,
-        "reynolds",
-        "reynolds module (C++ extension)",
-        -1,
-        NULL, NULL, NULL, NULL, NULL
-    };
-
-    PyMODINIT_FUNC PyInit_reynolds(void)
-    {
-        PyObject *m;
-        if (PyType_Ready(&ReynoldsType) < 0) return NULL;
-        m = PyModule_Create(&reynoldsmodule);
-        if (!m) return NULL;
-        Py_INCREF(&ReynoldsType);
-        if (PyModule_AddObjectRef(m, "Reynolds", reinterpret_cast<PyObject *>(&ReynoldsType)) < 0) {
-            Py_DECREF(&ReynoldsType);
-            Py_DECREF(m);
-            return NULL;
+    for (unsigned int i = 0; i < this->n_theta; i++) {
+        for (unsigned int j = 0; j < this->n_z; j++) {
+            if ((j == 0) || (j == this->n_z - 1)) {
+                triplets.push_back(Eigen::Triplet<double>(this->idx(i,j), this->idx(i,j), 1));
+                continue;
+            } else {
+                triplets.push_back(Eigen::Triplet<double>(this->idx(i,j), this->idx(i,j+1),    pow(h[i], 3)/pow(this->dz, 2)));
+                triplets.push_back(Eigen::Triplet<double>(this->idx(i,j), this->idx(i,j-1),    pow(h[i], 3)/pow(this->dz, 2)));
+                triplets.push_back(Eigen::Triplet<double>(this->idx(i,j), this->idx(i,j  ), -2*pow(h[i], 3)/pow(this->dz, 2) - 2*pow(h[i], 3)/(pow(this->R, 2)*pow(this->dtheta, 2))));
+                triplets.push_back(Eigen::Triplet<double>(this->idx(i,j), this->idx((i+1)%this->n_theta,j), 3*h[(i+1)%this->n_theta]*pow(h[i], 2)/(4*pow(this->R, 2)*pow(this->dtheta, 2)) - 3*h[(i-1)%this->n_theta]*pow(h[i], 2)/(4*pow(this->R, 2)*pow(this->dtheta, 2)) + pow(h[i], 3)/(pow(this->R, 2)*pow(this->dtheta, 2))));
+                triplets.push_back(Eigen::Triplet<double>(this->idx(i,j), this->idx((i-1)%this->n_theta,j), -3*h[(i+1)%this->n_theta]*pow(h[i], 2)/(4*pow(this->R, 2)*pow(this->dtheta, 2)) + 3*h[(i-1)%this->n_theta]*pow(h[i], 2)/(4*pow(this->R, 2)*pow(this->dtheta, 2)) + pow(h[i], 3)/(pow(this->R, 2)*pow(this->dtheta, 2))));
+            }
         }
-        return m;
     }
+
+    A.setFromTriplets(triplets.begin(), triplets.end());
+
+    return A;
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Reynolds::p(const double &epsilon, const double &beta) {
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>> solver;
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> p(this->n_theta, this->n_z);
+    Eigen::Map<Eigen::VectorXd> p_vec(p.data(), this->n);
+
+    Eigen::SparseMatrix<double> A = this->A(epsilon, beta);
+    Eigen::VectorXd b = this->b(epsilon, beta);
+
+    solver.compute(A);
+
+    p_vec = solver.solve(b);
+
+    for (unsigned int i = 0; i < this->n_theta; i++) {
+        for (unsigned int j = 0; j < this->n_z; j++) {
+            if (p(i,j) < this->p_amb) p(i,j) = this->p_amb;
+        }
+    }
+
+    return p;
+}
+
+double Reynolds::P_f(const double &epsilon, double const &beta) {
+    double P_f = 0;
+    const double dA = this->R * this->dtheta * this->dz;
+
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> tau = this->tau(epsilon, beta);
+    
+    for (unsigned int i = 0; i < this->n_theta; i++) {
+        for (unsigned int j = 0; j < this->n_z; j++) {
+            P_f += this->omega * this->R * tau(i,j) * dA;
+        }
+    }
+
+    return P_f;
+}
+
+unsigned int Reynolds::idx(const unsigned int &i, const unsigned int &j) {
+    return i * this->n_z + j;
+}
+
+std::vector<double> Reynolds::h(const double &epsilon, const double &beta) {
+    std::vector<double> h;
+    h.reserve(this->n_theta);
+    const double &s = this->s;
+
+    for (const double &theta : this->theta) {
+        h.push_back(s * (1 - epsilon * cos(theta - beta)));
+    }
+
+    return h;
+}
+
+Eigen::VectorXd Reynolds::b(const double &epsilon, const double &beta) {
+    Eigen::VectorXd b = Eigen::VectorXd::Zero(this->n);
+    std::vector<double> h = this->h(epsilon, beta);
+
+    for (unsigned int i = 0; i < this->n_theta; i++) {
+        for (unsigned int j = 0; j < this->n_z; j++) {
+            if ((j == 0) || (j == this->n_z - 1)) {
+                b(this->idx(i,j)) = this->p_amb;
+                continue;
+            } else {
+                b(this->idx(i,j)) = 3*this->eta*this->omega*(h[(i+1)%this->n_theta] - h[(i-1)%this->n_theta])/this->dtheta;
+            }
+        }
+    }
+
+    return b;
+}
+
+Eigen::Vector<double, 2> Reynolds::L(const double &epsilon, const double &beta) {
+    Eigen::Vector<double, 2> L;
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> p = this->p(epsilon, beta);
+    double dA = this->R * this->dtheta * this->dz;
+
+    for (unsigned int i = 0; i < this->n_theta; i++) {
+        for (unsigned int j = 0; j < this->n_z; j++) {
+            L(0) += -p(i,j) * sin(this->theta[i]) * dA;
+            L(1) +=  p(i,j) * cos(this->theta[i]) * dA;
+        }
+    }
+
+    return L;
+}
+
+Eigen::Vector2d Reynolds::residual(const double &epsilon, const double &beta) {
+    Eigen::Vector<double, 2> L = this->L(epsilon, beta);
+    Eigen::Vector<double, 2> residual = {L[0], L[1] - this->F};
+
+    return residual;
+}
+
+Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> Reynolds::tau(const double &epsilon, const double &beta) {
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> tau(this->n_theta, this->n_z);
+
+    std::vector<double> h = this->h(epsilon, beta);
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> p = this->p(epsilon, beta);
+
+    for (unsigned int i = 0; i < this->n_theta; i++) {
+        for (unsigned int j = 0; j < this->n_z; j++) {
+            double dp_dtheta = (p((i+1)%this->n_theta,j) - p((i-1)%this->n_theta,j)) / (2 * this->dtheta);
+            tau(i,j) = this->eta * ((this->omega * this->R) / h[i] - h[i] / (2 * this->R) * dp_dtheta);
+        }
+    }
+
+    return tau;
 }

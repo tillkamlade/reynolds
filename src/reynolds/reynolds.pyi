@@ -2,17 +2,14 @@ from typing import Final
 import numpy as np
 
 class Reynolds:
-    D: Final[float]
-    B: Final[float]
+    R: Final[float]
     s: Final[float]
     F: Final[float]
-    f: Final[float]
+    omega: Final[float]
     eta: Final[float]
     p_amb: Final[float]
     n_theta: Final[int]
     n_z: Final[int]
-    theta_min: Final[float]
-    theta_max: Final[float]
     def __init__(self,
                  D: float,
                  B: float,

@@ -12,7 +12,7 @@ find_package(Python COMPONENTS Interpreter Development.Module NumPy REQUIRED)
 
 add_subdirectory(external/eigen)
 
-python_add_library(reynolds MODULE src/reynolds.cpp)
+python_add_library(reynolds MODULE src/reynolds.cpp src/reynolds_py.cpp)
 
 target_include_directories(reynolds PRIVATE ${Python_NumPy_INCLUDE_DIRS})
 
