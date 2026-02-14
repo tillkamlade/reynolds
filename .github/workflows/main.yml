@@ -1,6 +1,6 @@
 on: [pull_request, push, workflow_dispatch]
 jobs:
-  test:
+  pip:
     runs-on: windows-latest
     steps:
       - name: Checkout repository
