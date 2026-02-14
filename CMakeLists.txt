@@ -6,11 +6,13 @@ endif()
 
 project(${SKBUILD_PROJECT_NAME} LANGUAGES CXX)
 
-find_package(Python COMPONENTS Development.Module REQUIRED)
+find_package(Python COMPONENTS Interpreter Development.Module NumPy REQUIRED)
 
 add_subdirectory(external/eigen)
 
 python_add_library(reynolds MODULE src/reynolds.cpp)
+
+target_include_directories(reynolds PRIVATE ${Python_NumPy_INCLUDE_DIRS})
 
 install(TARGETS reynolds LIBRARY DESTINATION .)
 target_link_libraries(reynolds PRIVATE Eigen3::Eigen)
