@@ -4,56 +4,59 @@
 #include <Python.h>
 #include <structmember.h>
 #include <numpy/arrayobject.h>
+#include <new>
+
+class Reynolds {
+    public:
+        Reynolds() : D(0), B(0), s(0), F(0), f(0), eta(0), p_amb(0), n_theta(0), n_z(0), theta_min(0), theta_max(2 * M_PI) {}
+        Reynolds(
+            double D,
+            double B,
+            double s,
+            double F,
+            double f,
+            double eta,
+            double p_amb,
+            int n_theta,
+            int n_z,
+            double theta_min,
+            double theta_max
+        ) : D(D), B(B), s(s), F(F), f(f), eta(eta), p_amb(p_amb), n_theta(n_theta), n_z(n_z), theta_min(theta_min), theta_max(theta_max) {}
+
+        double D, B, s, F, f, eta, p_amb, theta_min, theta_max;
+        int n_theta, n_z;
+};
 
 extern "C" {
     typedef struct {
         PyObject_HEAD
-        double D, B, s, F, f, eta, p_amb;
-        int n_theta, n_z;
-        double theta_min;
-        double theta_max;
+        Reynolds r;
     } ReynoldsObject;
 
     /* Prototype / stub: __new__ allocates and zero-inits fields */
     static PyObject *
-    Reynolds_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+    Reynolds_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
     {
-        ReynoldsObject *self = (ReynoldsObject *)type->tp_alloc(type, 0);
+        PyObject *self = type->tp_alloc(type, 0);
         if (!self) return NULL;
-        self->D = self->B = self->s = self->F = self->f = self->eta = self->p_amb = 0.0;
-        self->n_theta = 0;
-        self->n_z = 0;
-        self->theta_min = 0.0;
-        self->theta_max = 0.0;
-        return (PyObject *)self;
+        return self;
     }
 
     /* Prototype / stub: __init__ (parsing/initialization to be implemented later) */
     static int
-    Reynolds_init(ReynoldsObject *self, PyObject *args, PyObject *kwds)
+    Reynolds_init(ReynoldsObject *self, PyObject *args, PyObject *kwargs)
     {
         static const char *kwlist[] = {"D","B","s","F","f","eta","p_amb","n_theta","n_z","theta_min","theta_max", NULL};
         double D=0, B=0, s=0, F=0, f=0, eta=0, p_amb=0, theta_min=0, theta_max=2*M_PI;
         int n_theta=0, n_z=0;
 
-        if (!PyArg_ParseTupleAndKeywords(args, kwds, "dddddddii|dd", kwlist,
+        if (!PyArg_ParseTupleAndKeywords(args, kwargs, "dddddddII|dd", kwlist,
                                          &D,&B,&s,&F,&f,&eta,&p_amb,&n_theta,&n_z,&theta_min,&theta_max)) {
             /* For now do not raise a custom error; propagate parse failure */
             return -1;
         }
 
-        /* Store parsed values (actual validation/usage to be implemented later) */
-        self->D = D;
-        self->B = B;
-        self->s = s;
-        self->F = F;
-        self->f = f;
-        self->eta = eta;
-        self->p_amb = p_amb;
-        self->n_theta = n_theta;
-        self->n_z = n_z;
-        self->theta_min = theta_min;
-        self->theta_max = theta_max;
+        new (&(self->r)) Reynolds(D, B, s, F, f, eta, p_amb, n_theta, n_z, theta_min, theta_max);
 
         return 0;
     }
@@ -66,6 +69,7 @@ extern "C" {
         if (!PyArg_ParseTuple(args, "dd", &epsilon, &beta)) {
             return NULL;
         }
+
         PyErr_SetString(PyExc_NotImplementedError, "Reynolds.A is not implemented yet");
         return NULL;
     }
@@ -76,17 +80,17 @@ extern "C" {
     };
 
     static PyMemberDef Reynolds_members[] = {
-        {"D", T_DOUBLE, offsetof(ReynoldsObject, D), 0, "diameter"},
-        {"B", T_DOUBLE, offsetof(ReynoldsObject, B), 0, "width"},
-        {"s", T_DOUBLE, offsetof(ReynoldsObject, s), 0, "s"},
-        {"F", T_DOUBLE, offsetof(ReynoldsObject, F), 0, "F"},
-        {"f", T_DOUBLE, offsetof(ReynoldsObject, f), 0, "f"},
-        {"eta", T_DOUBLE, offsetof(ReynoldsObject, eta), 0, "viscosity"},
-        {"p_amb", T_DOUBLE, offsetof(ReynoldsObject, p_amb), 0, "ambient pressure"},
-        {"n_theta", T_INT, offsetof(ReynoldsObject, n_theta), 0, "theta samples"},
-        {"n_z", T_INT, offsetof(ReynoldsObject, n_z), 0, "z samples"},
-        {"theta_min", T_DOUBLE, offsetof(ReynoldsObject, theta_min), 0, "theta min"},
-        {"theta_max", T_DOUBLE, offsetof(ReynoldsObject, theta_max), 0, "theta max"},
+        {"D", T_DOUBLE, offsetof(ReynoldsObject, r.D), 0, "diameter"},
+        {"B", T_DOUBLE, offsetof(ReynoldsObject, r.B), 0, "width"},
+        {"s", T_DOUBLE, offsetof(ReynoldsObject, r.s), 0, "s"},
+        {"F", T_DOUBLE, offsetof(ReynoldsObject, r.F), 0, "F"},
+        {"f", T_DOUBLE, offsetof(ReynoldsObject, r.f), 0, "f"},
+        {"eta", T_DOUBLE, offsetof(ReynoldsObject, r.eta), 0, "viscosity"},
+        {"p_amb", T_DOUBLE, offsetof(ReynoldsObject, r.p_amb), 0, "ambient pressure"},
+        {"n_theta", T_INT, offsetof(ReynoldsObject, r.n_theta), 0, "theta samples"},
+        {"n_z", T_INT, offsetof(ReynoldsObject, r.n_z), 0, "z samples"},
+        {"theta_min", T_DOUBLE, offsetof(ReynoldsObject, r.theta_min), 0, "theta min"},
+        {"theta_max", T_DOUBLE, offsetof(ReynoldsObject, r.theta_max), 0, "theta max"},
         {NULL}  /* Sentinel */
     };
 
