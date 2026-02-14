@@ -76,6 +76,6 @@ def test_Reynolds_READONLY(reynolds_kwargs):
         rey.theta_max = 1
 
 def test_Reynolds_negative_values(reynolds_kwargs):
-    reynolds_kwargs['D'] = -reynolds_kwargs['D']
-    with pytest.raises(expected_exception = AttributeError, match = 'D must be positive'):
+    reynolds_kwargs['n_theta'] = -1
+    with pytest.raises(expected_exception = AttributeError, match = 'n_theta must be positive'):
         Reynolds(**reynolds_kwargs)

@@ -67,7 +67,6 @@ extern "C" {
         return 0;
     }
 
-    /* Prototype / stub: A(epsilon, beta) -> raises NotImplementedError for now */
     static PyObject *Reynolds_A(ReynoldsObject *self, PyObject *args)
     {
         double epsilon=0.0, beta=0.0;
@@ -90,8 +89,8 @@ extern "C" {
         {"f", T_DOUBLE, offsetof(ReynoldsObject, r.f), Py_READONLY, "f"},
         {"eta", T_DOUBLE, offsetof(ReynoldsObject, r.eta), Py_READONLY, "viscosity"},
         {"p_amb", T_DOUBLE, offsetof(ReynoldsObject, r.p_amb), Py_READONLY, "ambient pressure"},
-        {"n_theta", T_INT, offsetof(ReynoldsObject, r.n_theta), Py_READONLY, "theta samples"},
-        {"n_z", T_INT, offsetof(ReynoldsObject, r.n_z), Py_READONLY, "z samples"},
+        {"n_theta", T_UINT, offsetof(ReynoldsObject, r.n_theta), Py_READONLY, "theta samples"},
+        {"n_z", T_UINT, offsetof(ReynoldsObject, r.n_z), Py_READONLY, "z samples"},
         {"theta_min", T_DOUBLE, offsetof(ReynoldsObject, r.theta_min), Py_READONLY, "theta min"},
         {"theta_max", T_DOUBLE, offsetof(ReynoldsObject, r.theta_max), Py_READONLY, "theta max"},
         {NULL}  /* Sentinel */
@@ -153,7 +152,7 @@ extern "C" {
         m = PyModule_Create(&reynoldsmodule);
         if (!m) return NULL;
         Py_INCREF(&ReynoldsType);
-        if (PyModule_AddObject(m, "Reynolds", (PyObject *)&ReynoldsType) < 0) {
+        if (PyModule_AddObjectRef(m, "Reynolds", reinterpret_cast<PyObject *>(&ReynoldsType)) < 0) {
             Py_DECREF(&ReynoldsType);
             Py_DECREF(m);
             return NULL;
